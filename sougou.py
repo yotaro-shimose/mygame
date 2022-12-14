@@ -26,7 +26,8 @@ SCORE_BOARD_HEIGHT = 50
 
 ROSE_SIZES = [30, 60, 120]
 ROSE_SCORES = [10, 20, 30]
-ROSE_PATH = Path() / "images" / "bara.jpg"
+ROSE_PATH = Path() / "images" / "rose.jpg"
+RED_ROSE_PATH = Path() / "images" / "red_rose.jpg"
 BG_PATH = Path() / "images" / "wood.jpg"
 
 LOSE_IMAGE = load_image(ROSE_PATH)
