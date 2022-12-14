@@ -30,7 +30,8 @@ ROSE_PATH = Path() / "images" / "rose.jpg"
 RED_ROSE_PATH = Path() / "images" / "red_rose.jpg"
 BG_PATH = Path() / "images" / "wood.jpg"
 
-LOSE_IMAGE = load_image(ROSE_PATH)
+ROSE_IMAGE = load_image(ROSE_PATH)
+RED_ROSE_IMAGE = load_image(RED_ROSE_PATH)
 BG_IMAGE = load_image(BG_PATH)
 
 
@@ -45,7 +46,7 @@ class Root:
             f"{GAME_WINDOW_WIDTH}x{GAME_WINDOW_HEIGHT + SCORE_BOARD_HEIGHT}"
         )
         self.score_board = ScoreBoard(self.root, self.time_limit_sec)
-        self.game = RoseBoard(self.root, add_score=self.add_score)
+        self.game = RoseBoard(self.root, get_on_click=self.get_on_rose_click)
         self.elapsed_time_ms = 0
         self.score = 0
 
@@ -72,6 +73,18 @@ class Root:
     def add_score(self, additional_score: int):
         self.score += additional_score
         self.score_board.set_score(self.score)
+
+    def get_on_rose_click(self, rose: RoseButton) -> Callable:
+        def on_click(_event):
+            if self.is_cleared():
+                return
+            nonlocal rose
+            rose.count_down()
+            if rose.counter == 0:
+                self.add_score(rose.score)
+                rose.fill_rose()
+
+        return on_click
 
 
 class ScoreBoard:
@@ -105,9 +118,9 @@ class ScoreBoard:
 class RoseBoard:
     num_click: int = 5
 
-    def __init__(self, master: tk.Misc, add_score: Callable[[int], None]):
+    def __init__(self, master: tk.Misc, get_on_click: Callable):
         self.roses: dict[str, RoseButton] = {}
-        self.add_score = add_score
+        self.get_on_click = get_on_click
 
         self.window = tk.Frame(
             master, height=GAME_WINDOW_HEIGHT, width=GAME_WINDOW_WIDTH
@@ -127,15 +140,7 @@ class RoseBoard:
         idx = str(uuid.uuid4())
         self.roses[idx] = rose
 
-        def on_click(_event):
-            nonlocal rose
-            rose.count_down()
-            if rose.counter == 0:
-                rose.button.destroy()
-                self.roses.pop(idx)
-                self.add_score(rose.score)
-
-        rose.bind(on_click)
+        rose.bind(self.get_on_click(rose))
 
     def gen_random_rose(self):
         size_idx = random.choice([0, 1, 2])
@@ -157,15 +162,16 @@ class RoseButton:
     button: tk.Button
     counter: int
     score: int
+    size: int
     LEFT_CLICK: str = "<Button-1>"
 
     @classmethod
     def with_master(
         cls, master: tk.Misc, num_click: int, size: int, score: int
     ) -> Self:
-        tk_image = ImageTk.PhotoImage(LOSE_IMAGE.resize((size, size)))
+        tk_image = ImageTk.PhotoImage(ROSE_IMAGE.resize((size, size)))
         button = tk.Button(master=master, image=tk_image)
-        return cls(tk_image, button, num_click, score)
+        return cls(tk_image, button, num_click, score, size)
 
     def place(self, x: int, y: int):
         self.button.place(x=x, y=y)
@@ -175,6 +181,12 @@ class RoseButton:
 
     def count_down(self):
         self.counter -= 1
+
+    def fill_rose(self):
+        self.tk_image = ImageTk.PhotoImage(
+            RED_ROSE_IMAGE.resize((self.size, self.size))
+        )
+        self.button.configure(image=self.tk_image)
 
 
 if __name__ == "__main__":
